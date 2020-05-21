@@ -8,58 +8,72 @@ Description:
     List of Functions:
     1. Convert to Grayscale
     2. Negative Transformation
+    3. Logarithmic Transformation
 
 """
 
-from PIL import Image
+#from PIL import Image
+import cv2
 import numpy as np
 
 
-class UnsupportedModeError(Exception):
-    pass
-
 
 def convert_to_grayscale(image):
-    """Convert RGB Image to grayscale using RGB wieghts with dot product.
+    """Convert RGB Image to grayscale using RGB weights with dot product.
 
     :param image:   Original Image
-    :type:          PIL.Image
+    :type:          numpy.ndarray
     :return:        Grayscale Image
-    :rtype:         PIL.Image
+    :rtype:         numpy.ndarray
     """
     rgb_weights = [0.2989, 0.5870, 0.1140]
-    if 'RGB' in image.mode:
-        image_data = np.asarray(image)
-        gray_image = np.dot(image_data[..., :3], rgb_weights)
-    else:
-        raise UnsupportedModeError
 
-    new_image = Image.fromarray(np.uint8(gray_image))
+    new_image = np.dot(image[..., :3], rgb_weights)
+    new_image = new_image.astype(np.uint8)
+
     return new_image
 
 
 def negative_transform(image):
     """Grayscale negative image transformation.
-    :param image:   Original Image
-    :type:          PIL.Image
-    :return:        inverged image file
-    :rtype:         PIL.Image
-    """
-    L = 2 ** image.bits                     # Input gray level
-    if 'L' or 'RGB' in image.mode:
-        image_data = np.asarray(image)
-        image_data = (L - 1) - image_data   # s = L - 1 - r
-    else:
-        raise UnsupportedModeError
 
-    new_image = Image.fromarray(np.uint8(image_data))
+    :param image:   Original Image
+    :type:          numpy.ndarray
+    :return:        inverted image file
+    :rtype:         numpay.ndarray
+    """
+    L = 2 ** int(round(np.log2(image.max())))       # Input gray level
+    new_image = (L - 1) - image                         # s = L - 1 - r
+    new_image = new_image.astype(np.uint8)
+
     return new_image
 
 
+def log_transform(image):
+    """Logarithmic Transformation of grayscale image.
+
+    :param image:   Original Image
+    :type:          numpy.ndarray
+    :return:        log transformed image file
+    :rtype:         numpy.ndarray
+    """
+    c = 255 / np.log(1 + np.max(image))
+    new_image = c * np.log(1 + image)
+    new_image = new_image.astype(np.uint8)
+
+    return new_image
+
 if __name__ == '__main__':
-    image_file = Image.open("./Cleveland.jpg")
-    image_file.show()
+    image_file = cv2.imread("./Cleveland.jpg")
+    #cv2.imshow('Original Image', image_file)
+    #cv2.waitKey(0)
     gray_image = convert_to_grayscale(image_file)
-    gray_image.show()
-    negative_image = negative_transform(image_file)
-    negative_image.show()
+    cv2.imshow('Grayscale Image', gray_image)
+    cv2.waitKey(0)
+    #negative_image = negative_transform(gray_image)
+    #cv2.imshow('Inverted Image', negative_image)
+    #cv2.waitKey(0)
+    log_image = log_transform(gray_image)
+    cv2.imshow('Logarithmic Transformed Image', log_image)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
