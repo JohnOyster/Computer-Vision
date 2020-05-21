@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""
-CIS 693 - Spatial Transformations Homework
+"""CIS 693 - Spatial Transformations Homework.
+
 Author: John Oyster
 CSU ID: 2398851
 Date:   May 22, 2020
@@ -9,13 +9,11 @@ Description:
     1. Convert to Grayscale
     2. Negative Transformation
     3. Logarithmic Transformation
+    4. Gamma Transformation
 
 """
-
-#from PIL import Image
 import cv2
 import numpy as np
-
 
 
 def convert_to_grayscale(image):
@@ -27,7 +25,6 @@ def convert_to_grayscale(image):
     :rtype:         numpy.ndarray
     """
     rgb_weights = [0.2989, 0.5870, 0.1140]
-
     new_image = np.dot(image[..., :3], rgb_weights)
     new_image = new_image.astype(np.uint8)
 
@@ -57,7 +54,8 @@ def log_transform(image):
     :return:        log transformed image file
     :rtype:         numpy.ndarray
     """
-    c = np.iinfo(image.dtype).max / np.log(1 + np.max(image))       # Selecting c to help normalize r
+    # Selecting c to help normalize r
+    c = np.iinfo(image.dtype).max / np.log(1 + np.max(image))
     new_image = c * np.log(1 + image)
     new_image = new_image.astype(np.uint8)
 
@@ -74,15 +72,13 @@ def gamma_transformation(image, gamma=1.0):
     :return:        gamma transformed image file
     :rtype:         numpy.ndarray
     """
-    c = 255
+    c = 255                     # TODO(John): Figure out a calculation for c
     norm_image = image / np.max(image)
     new_image = c * np.power(norm_image, gamma)
     new_image = new_image.astype(np.uint8)
 
     return new_image
 
-
-def histogram
 
 if __name__ == '__main__':
     image_file = cv2.imread("./Cleveland.jpg")
