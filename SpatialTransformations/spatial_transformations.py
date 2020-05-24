@@ -2,7 +2,6 @@
 """CIS 693 - Spatial Transformations Homework.
 
 Author: John Oyster
-CSU ID: 2398851
 Date:   May 22, 2020
 Description:
     List of Functions:
