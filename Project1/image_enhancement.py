@@ -27,6 +27,8 @@ import numpy as np
 import os.path
 
 
+# ----------------------------------------------------------------------------
+# Define Test Images
 def test_images():
     """Generator to return test images.
 
@@ -47,7 +49,6 @@ def test_images():
 
 # ----------------------------------------------------------------------------
 # Three main independent processes:
-#
 #   1. Adaptive luminance enhancement
 #       - Treatment of luminance information
 #       - Dynamic range compression
@@ -57,8 +58,56 @@ def test_images():
 #   3. Color restoration
 #       - Convert the intensity images back to color images
 # ----------------------------------------------------------------------------
+def adaptive_luminance_enhancement(image, normalize=True):
+    """Perform the non-linear luminance enhancement formula.
+
+    :param image:       Input grayscale image
+    :type:              numpy.ndarray
+    :param normalize:   Decide if normalize image [0 1]
+    :type:              bool
+    :return:            Enhanced Image
+    :rtype:             numpy.ndarray
+    """
+    # Define image properties
+    print(image)
+    bits_per_pixel = np.iinfo(image.dtype).max
+
+    # Define the z parameter for the normalized image enhancement equation.
+    def _z_func(L):
+        if L <= 50:
+            z = 0
+        elif (50 < L) & (L <= 105):
+            z = (L - 50) / 100
+        else:  # (L > 105)
+            z = 1
+        return z
+
+    z_func = np.vectorize(_z_func, otypes=[np.float64])
+    z_param = z_func(image)
+
+    # Normalize the input image if needed
+    image = image.astype(np.float64)
+    new_image = (image / bits_per_pixel) if normalize else image
+
+    # Apply image enhancement equation I'_n
+    # TODO(John): Checked up to this point
+    enhance_image = 0.5 * (np.power(new_image, 0.75 * z_param + 0.25) +
+                           (1 - new_image) * 0.4 * (1 - z_param) +
+                           np.power(new_image, 2 - z_param))
+
+    #print(enhance_image)
+    return
 
 
+def adaptive_contrast_enhancement(image):
+    pass
+
+
+def color_restoration():
+    pass
+
+# ----------------------------------------------------------------------------
+# Support Functions
 def _convert_rgb_to_grayscale(image, normalize=False):
     """Convert input color image to the intensity (gray-scale) image.
 
@@ -88,50 +137,19 @@ def _convert_rgb_to_grayscale(image, normalize=False):
     return new_image
 
 
-def adaptive_luminance_enhancement(image, normalize=True):
-    """
-
-    :param image:       Input grayscale image
-    :type:              numpy.ndarray
-    :param normalize:   Decide if normalize image [0 1]
-    :type:              bool
-    :return:
-    """
-    # Define image properties
-    print(image)
-    bits_per_pixel = np.iinfo(image.dtype).max
-
-    # Define the z parameter for the normalized image enhancement equation.
-    def _z_func(L):
-        if L <= 50:
-            z = 0
-        elif (50 < L) & (L <= 105):
-            z = (L - 50)/100
-        else:    # (L > 105)
-            z = 1
-        return z
-    z_func = np.vectorize(_z_func, otypes=[np.float64])
-    z_param = z_func(image)
-
-    # Normalize the input image if needed
-    image = image.astype(np.float64)
-    new_image = (image / bits_per_pixel) if normalize else image
-
-    # Apply image enhancement equation I'_n
-    enhance_image = 0.5 * (np.power(new_image, 0.75 * z_param + 0.25) +
-                          (1 - new_image) * 0.4 * (1 - z_param) +
-                          np.power(new_image, 2 - z_param))
-
-    print(enhance_image)
-    return
+def kernel_gaussian(image, use_opencv=False):
+    # G(x, y) = (1/2*pi*std^2) exp( -x^2 + y^2/ 2*std^2 )
+    # G_i(x, y) = K exp(-(x^2+y^2)/c_i^2
+    row_dim, col_dim = 0, 1
+    std = np.std(image)
+    K = 0.5 * np.pi * std^2
+    c_i = np.sqrt(2) * std
+    return K * np.exp(np.power(
 
 
-def adaptive_contrast_enhancement():
+def image_convolution(image):
     pass
 
-
-def color_restoration():
-    pass
 
 
 if __name__ == '__main__':
@@ -143,10 +161,9 @@ if __name__ == '__main__':
         gray_image = _convert_rgb_to_grayscale(original_image)
 
         # Step 2 - Adaptive Luminance Enhancement
-        test_arr = np.array([[5, 25, 65],
-                             [100, 150, 255]])
-        #luminance_intensity_image = adaptive_luminance_enhancement(gray_image)
+        test_arr = np.array([[5, 25, 65],[100, 150, 255]]).astype(np.uint8)
         luminance_intensity_image = adaptive_luminance_enhancement(test_arr)
+        # luminance_intensity_image = adaptive_luminance_enhancement(gray_image)
 
         # Step n - Display results
         # import pdb;pdb.set_trace()
