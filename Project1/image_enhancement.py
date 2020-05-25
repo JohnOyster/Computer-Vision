@@ -36,13 +36,14 @@ def test_images():
     test_directory = './Data/'
     test_set = [
         'Image-1.jpg'
-        #'Image-2.bmp',
-        #'Image-3.jpg',
-        #'Image-4.jpg',
-        #'Image-5.jpg',
-        #'Image-7.bmp'
+        # 'Image-2.bmp',
+        # 'Image-3.jpg',
+        # 'Image-4.jpg',
+        # 'Image-5.jpg',
+        # 'Image-7.bmp'
     ]
     yield os.path.join(test_directory, test_set.pop())
+
 
 # ----------------------------------------------------------------------------
 # Three main independent processes:
@@ -58,7 +59,7 @@ def test_images():
 # ----------------------------------------------------------------------------
 
 
-def _convert_rgb_to_grayscale(image, normailize=False):
+def _convert_rgb_to_grayscale(image, normalize=False):
     """Convert input color image to the intensity (gray-scale) image.
 
     Method in standard NTSC (National Television Standards Committee)
@@ -68,8 +69,12 @@ def _convert_rgb_to_grayscale(image, normailize=False):
           values of low-intensity.
         - Compute the enhanced intensity.
 
-    :param image:
-    :return:
+    :param image:       Image array
+    :type:              numpy.ndarray
+    :param normalize:   Decide if normalize image [0 1]
+    :type:              bool
+    :return:            Grayscale Image
+    :rtype:             numpy.ndarray
     """
 
     bits_per_pixel = np.iinfo(image.dtype).max
@@ -77,11 +82,48 @@ def _convert_rgb_to_grayscale(image, normailize=False):
     new_image = np.dot(image[..., :3], rgb_weights)
     new_image = new_image.astype(np.uint8)
 
+    if normalize:
+        new_image = new_image / bits_per_pixel
+
     return new_image
 
 
-def adaptive_luminance_enhancement():
-    pass
+def adaptive_luminance_enhancement(image, normalize=True):
+    """
+
+    :param image:       Input grayscale image
+    :type:              numpy.ndarray
+    :param normalize:   Decide if normalize image [0 1]
+    :type:              bool
+    :return:
+    """
+    # Define image properties
+    print(image)
+    bits_per_pixel = np.iinfo(image.dtype).max
+
+    # Define the z parameter for the normalized image enhancement equation.
+    def _z_func(L):
+        if L <= 50:
+            z = 0
+        elif (50 < L) & (L <= 105):
+            z = (L - 50)/100
+        else:    # (L > 105)
+            z = 1
+        return z
+    z_func = np.vectorize(_z_func, otypes=[np.float64])
+    z_param = z_func(image)
+
+    # Normalize the input image if needed
+    image = image.astype(np.float64)
+    new_image = (image / bits_per_pixel) if normalize else image
+
+    # Apply image enhancement equation I'_n
+    enhance_image = 0.5 * (np.power(new_image, 0.75 * z_param + 0.25) +
+                          (1 - new_image) * 0.4 * (1 - z_param) +
+                          np.power(new_image, 2 - z_param))
+
+    print(enhance_image)
+    return
 
 
 def adaptive_contrast_enhancement():
@@ -100,9 +142,15 @@ if __name__ == '__main__':
         # Step 1 - Convert to grayscale
         gray_image = _convert_rgb_to_grayscale(original_image)
 
+        # Step 2 - Adaptive Luminance Enhancement
+        test_arr = np.array([[5, 25, 65],
+                             [100, 150, 255]])
+        #luminance_intensity_image = adaptive_luminance_enhancement(gray_image)
+        luminance_intensity_image = adaptive_luminance_enhancement(test_arr)
+
         # Step n - Display results
-        #import pdb;pdb.set_trace()
-        gray_image_3 = cv2.cvtColor(gray_image, cv2.COLOR_GRAY2BGR)     # Trick to stack images
+        # import pdb;pdb.set_trace()
+        gray_image_3 = cv2.cvtColor(gray_image, cv2.COLOR_GRAY2BGR)  # Trick to stack images
         output_stack = np.hstack((original_image, gray_image_3))
         cv2.imshow('Filter results', output_stack)
         cv2.waitKey(0)
