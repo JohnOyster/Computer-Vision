@@ -68,8 +68,6 @@ def adaptive_luminance_enhancement(image, normalize=True):
     :type:              numpy.ndarray
     :param normalize:   Decide if normalize image [0 1]
     :type:              bool
-    :param output_RGB:  Decide to repeat luminance values three times
-    :type:              bool
     :return:            Luminance Values of image
     :rtype:             numpy.ndarray
     """
@@ -85,7 +83,6 @@ def adaptive_luminance_enhancement(image, normalize=True):
         else:  # (L > 150)
             z = 1
         return z
-
     z_func = np.vectorize(_z_func, otypes=[np.float64])
     z_param = z_func(image)
 
@@ -102,14 +99,19 @@ def adaptive_luminance_enhancement(image, normalize=True):
 
 
 def adaptive_contrast_enhancement(image, image_norm, sigma):
+    """Translate luminance values into local neighborhood contrasted grayscale image.
+
+    :param image:
+    :param image_norm:
+    :param sigma:
+    :return:
+    """
     bits_per_pixel = np.iinfo(image.dtype).max
     # Get the Gaussian kernel convolved image
     # Iconv(x,y) = I(x, y) * G(x, y)
     kernel = kernel_gaussian(5, sigma)
-
-    # Make the gray scale image have three channels
-    convolved_image = gaussian_filter(image, sigma=sigma)
     image = image.astype(np.float64)
+    convolved_image = gaussian_filter(image, sigma=sigma)
     #image = np.stack((image,)*3, axis=-1)
     #image = np.repeat(image[..., np.newaxis], 3, axis=2)
     #image_norm = np.stack((image_norm,)*3, axis=-1)
@@ -128,7 +130,7 @@ def adaptive_contrast_enhancement(image, image_norm, sigma):
 
     p_func = np.vectorize(_p_func, otypes=[np.float64])
     # Find E(x, y) = r(x, y)^P = (Iconv(x, y)/I(x, y))^P
-    E_param = np.power(convolved_image / image, p_func(sigma))
+    E_param = np.power(np.divide(convolved_image, image, out=np.zeros_like(convolved_image), where=image != 0), p_func(sigma))
 
     # Find the center-surround contrast enhancement
     # S(x,y) = 255*Inorm(x, y)^E(x, y)
@@ -138,13 +140,21 @@ def adaptive_contrast_enhancement(image, image_norm, sigma):
 
 
 def color_restoration(image, pixel_intensities, grayscale_image, hue_adjust=1):
+    """Perform color restoration
+
+    :param image:
+    :param pixel_intensities:
+    :param grayscale_image:
+    :param hue_adjust:
+    :return:
+    """
     image = image.astype(np.float64)
     grayscale_image = grayscale_image.astype(np.float64)
     pixel_intensities = pixel_intensities.astype(np.float64)
     pixel_intensities = np.stack((pixel_intensities,) * 3, axis=-1)
     grayscale_image = np.stack((grayscale_image,)*3, axis=-1)
     #grayscale_image = np.repeat(grayscale_image[..., np.newaxis], 3, axis=2)
-    color_enhanced_image = pixel_intensities * (image / grayscale_image) * hue_adjust
+    color_enhanced_image = pixel_intensities * (np.divide(image, grayscale_image, out=np.zeros_like(image), where=grayscale_image != 0)) * hue_adjust
     color_enhanced_image = color_enhanced_image.astype(np.uint8)
     return color_enhanced_image
 
@@ -214,6 +224,15 @@ def kernel_gaussian(size=5, sigma=1, use_opencv=True):
 
 
 def image_convolution(image, kernel):
+    """Convolve an image with a given kernel.
+
+    :param image:       Image
+    :type:              numpy.ndarray
+    :param kernel:      NxN matrix mask for operation
+    :type:              numpy.ndarray
+    :return:            Convolved Image
+    :rtype:             numpy.ndarray
+    """
     (N, M) = image.shape[:2]
     (kernel_N, kernel_M) = kernel.shape[:2]
 
