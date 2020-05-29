@@ -71,7 +71,7 @@ def gamma_transformation(image, gamma=1.0):
     :return:        gamma transformed image file
     :rtype:         numpy.ndarray
     """
-    c = 255                     # TODO(John): Figure out a calculation for c
+    c = 255
     norm_image = image / np.max(image)
     new_image = c * np.power(norm_image, gamma)
     new_image = new_image.astype(np.uint8)

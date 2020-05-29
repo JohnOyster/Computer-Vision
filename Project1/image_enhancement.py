@@ -22,10 +22,11 @@ Description:
         1. Unless this statement is remove, 8-bit pixel values
 
 """
-import cv2
+#  Copyright (c) 2020. John Oyster in agreement with Cleveland State University.
 from enum import Enum
-import numpy as np
 import os.path
+import cv2
+import numpy as np
 from scipy.ndimage import gaussian_filter
 
 
@@ -46,7 +47,7 @@ def test_images():
         'Image-5.jpg',
         'Image-7.bmp'
     ]
-    for image in range(len(test_set)):
+    for image, _ in enumerate(test_set):
         yield os.path.join(test_directory, test_set[image])
 
 
@@ -75,14 +76,15 @@ def adaptive_luminance_enhancement(image, normalize=True):
     bits_per_pixel = np.iinfo(image.dtype).max
 
     # Define the z parameter for the normalized image enhancement equation.
-    def _z_func(L):
-        if L <= 50:
+    def _z_func(luminance):
+        if luminance <= 50:
             z = 0
-        elif (50 < L) and (L <= 150):
-            z = (L - 50) / 100
+        elif (luminance > 50) and (luminance <= 150):
+            z = (luminance - 50) / 100
         else:  # (L > 150)
             z = 1
         return z
+
     z_func = np.vectorize(_z_func, otypes=[np.float64])
     z_param = z_func(image)
 
@@ -91,7 +93,6 @@ def adaptive_luminance_enhancement(image, normalize=True):
     new_image = (image / bits_per_pixel) if normalize else image
 
     # Apply image enhancement equation I'_n
-    # TODO(John): Checked up to this point
     luminance_values = 0.5 * (np.power(new_image, 0.75 * z_param + 0.25) +
                               (1 - new_image) * 0.4 * (1 - z_param) +
                               np.power(new_image, 2 - z_param))
@@ -118,15 +119,9 @@ def adaptive_contrast_enhancement(image, image_norm, sigma):
     kernel = kernel_gaussian(5, sigma)
     image = image.astype(np.float64)
     convolved_image = gaussian_filter(image, sigma=sigma)
-    #convolved_image = cv2.filter2D(image, -1, kernel)
 
-    # TODO(John): Remove this test code
-    # ===
-    # image = np.stack((image,)*3, axis=-1)
-    # image = np.repeat(image[..., np.newaxis], 3, axis=2)
-    # image_norm = np.stack((image_norm,)*3, axis=-1)
-    # image_norm = np.repeat(image_norm[..., np.newaxis], 3, axis=2)
-    # ===
+    # convolved_image = cv2.filter2D(image, -1, kernel)
+
     # Calculate P parameter
     def _p_func(sigma):
         if sigma <= 3:
@@ -136,17 +131,18 @@ def adaptive_contrast_enhancement(image, image_norm, sigma):
         else:  # sigma >= 10
             p = 1
         return p
+
     p_func = np.vectorize(_p_func, otypes=[np.float64])
     # Find the intensity ratio between the convolved image and the grayscale image
     # E(x, y) = r(x, y)^P = (I_conv(x, y)/I(x, y))^P
-    E_param = np.power(np.divide(convolved_image, image, out=np.zeros_like(convolved_image),
-                                 where=image != 0), p_func(sigma))
+    intensity_ratio = np.power(np.divide(convolved_image, image, out=np.zeros_like(convolved_image),
+                                         where=image != 0), p_func(sigma))
 
     # Find the center-surround contrast enhancement pixel intensities
     # S(x,y) = 255 * I_norm(x, y)^E(x, y)
-    S_param = bits_per_pixel * np.power(image_norm, E_param)
-    S_param = S_param.astype(np.uint8)
-    return S_param
+    pixel_intensities = bits_per_pixel * np.power(image_norm, intensity_ratio)
+    pixel_intensities = pixel_intensities.astype(np.uint8)
+    return pixel_intensities
 
 
 def color_restoration(image, pixel_intensities, grayscale_image, hue_adjust=0.28):
@@ -163,15 +159,16 @@ def color_restoration(image, pixel_intensities, grayscale_image, hue_adjust=0.28
     :return:                    The color, enhanced image
     :rtype:                     numpy.ndarray
     """
+    # Convert data types and repeat images to three channels
     image = image.astype(np.float64)
     grayscale_image = grayscale_image.astype(np.float64)
     pixel_intensities = pixel_intensities.astype(np.float64)
     pixel_intensities = np.stack((pixel_intensities,) * 3, axis=-1)
     grayscale_image = np.stack((grayscale_image,) * 3, axis=-1)
-
-    # grayscale_image = np.repeat(grayscale_image[..., np.newaxis], 3, axis=2)
-    color_enhanced_image = pixel_intensities * (np.divide(image, grayscale_image, out=np.zeros_like(image),
-                                                          where=grayscale_image != 0)) * hue_adjust
+    # Enhance color
+    color_enhanced_image = pixel_intensities * \
+                           (np.divide(image, grayscale_image, out=np.zeros_like(image),
+                                      where=grayscale_image != 0)) * hue_adjust
     color_enhanced_image = color_enhanced_image.astype(np.uint8)
     return color_enhanced_image
 
@@ -180,6 +177,7 @@ def color_restoration(image, pixel_intensities, grayscale_image, hue_adjust=0.28
 # Support Functions
 class Color(Enum):
     """Enumeration for RGB Channels."""
+
     RED = 0
     GREEN = 1
     BLUE = 2
@@ -294,8 +292,8 @@ if __name__ == '__main__':
 
         # Step 6 - Display results
         # Need to resize images to make it fit on my laptop screen better
-        resize_images = True
-        if resize_images:
+        RESIZE_IMAGES = True
+        if RESIZE_IMAGES:
             original_image = cv2.resize(original_image, (500, 500))
             enhanced_image = cv2.resize(enhanced_image, (500, 500))
         output_stack = np.hstack((original_image, enhanced_image))
