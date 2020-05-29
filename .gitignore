@@ -1,3 +1,4 @@
 # Gitignore File
 .idea/
 venv/
+.pyc
