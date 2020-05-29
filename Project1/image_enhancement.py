@@ -101,23 +101,32 @@ def adaptive_luminance_enhancement(image, normalize=True):
 def adaptive_contrast_enhancement(image, image_norm, sigma):
     """Translate luminance values into local neighborhood contrasted grayscale image.
 
-    :param image:
-    :param image_norm:
-    :param sigma:
-    :return:
+    :param image:           The grayscale image
+    :type:                  numpy.ndarray
+    :param image_norm:      The luminance correction values
+    :type:                  numpy.ndarray
+    :param sigma:           The global standard deviation
+    :type:                  float
+    :return:                The dynamic compressed image
+    :rtype:                 numpy.ndarray
     """
+    # Get image properties
     bits_per_pixel = np.iinfo(image.dtype).max
+
     # Get the Gaussian kernel convolved image
     # Iconv(x,y) = I(x, y) * G(x, y)
     kernel = kernel_gaussian(5, sigma)
     image = image.astype(np.float64)
     convolved_image = gaussian_filter(image, sigma=sigma)
-    #image = np.stack((image,)*3, axis=-1)
-    #image = np.repeat(image[..., np.newaxis], 3, axis=2)
-    #image_norm = np.stack((image_norm,)*3, axis=-1)
-    #image_norm = np.repeat(image_norm[..., np.newaxis], 3, axis=2)
     #convolved_image = cv2.filter2D(image, -1, kernel)
 
+    # TODO(John): Remove this test code
+    # ===
+    # image = np.stack((image,)*3, axis=-1)
+    # image = np.repeat(image[..., np.newaxis], 3, axis=2)
+    # image_norm = np.stack((image_norm,)*3, axis=-1)
+    # image_norm = np.repeat(image_norm[..., np.newaxis], 3, axis=2)
+    # ===
     # Calculate P parameter
     def _p_func(sigma):
         if sigma <= 3:
@@ -127,34 +136,42 @@ def adaptive_contrast_enhancement(image, image_norm, sigma):
         else:  # sigma >= 10
             p = 1
         return p
-
     p_func = np.vectorize(_p_func, otypes=[np.float64])
-    # Find E(x, y) = r(x, y)^P = (Iconv(x, y)/I(x, y))^P
-    E_param = np.power(np.divide(convolved_image, image, out=np.zeros_like(convolved_image), where=image != 0), p_func(sigma))
+    # Find the intensity ratio between the convolved image and the grayscale image
+    # E(x, y) = r(x, y)^P = (I_conv(x, y)/I(x, y))^P
+    E_param = np.power(np.divide(convolved_image, image, out=np.zeros_like(convolved_image),
+                                 where=image != 0), p_func(sigma))
 
-    # Find the center-surround contrast enhancement
-    # S(x,y) = 255*Inorm(x, y)^E(x, y)
+    # Find the center-surround contrast enhancement pixel intensities
+    # S(x,y) = 255 * I_norm(x, y)^E(x, y)
     S_param = bits_per_pixel * np.power(image_norm, E_param)
     S_param = S_param.astype(np.uint8)
     return S_param
 
 
-def color_restoration(image, pixel_intensities, grayscale_image, hue_adjust=1):
-    """Perform color restoration
+def color_restoration(image, pixel_intensities, grayscale_image, hue_adjust=0.28):
+    """Perform color restoration on a grayscale image.
 
-    :param image:
-    :param pixel_intensities:
-    :param grayscale_image:
-    :param hue_adjust:
-    :return:
+    :param image:               The original color image
+    :type:                      numpy.ndarray
+    :param pixel_intensities:   A matrix of disrtibuted contrast values from grayscale image
+    :type:                      numpy.ndarray
+    :param grayscale_image:     The grayscale converted image
+    :type:                      numpy.ndarray
+    :param hue_adjust:          A value close to 1 to adjust the hue of the image
+    :type:                      float
+    :return:                    The color, enhanced image
+    :rtype:                     numpy.ndarray
     """
     image = image.astype(np.float64)
     grayscale_image = grayscale_image.astype(np.float64)
     pixel_intensities = pixel_intensities.astype(np.float64)
     pixel_intensities = np.stack((pixel_intensities,) * 3, axis=-1)
-    grayscale_image = np.stack((grayscale_image,)*3, axis=-1)
-    #grayscale_image = np.repeat(grayscale_image[..., np.newaxis], 3, axis=2)
-    color_enhanced_image = pixel_intensities * (np.divide(image, grayscale_image, out=np.zeros_like(image), where=grayscale_image != 0)) * hue_adjust
+    grayscale_image = np.stack((grayscale_image,) * 3, axis=-1)
+
+    # grayscale_image = np.repeat(grayscale_image[..., np.newaxis], 3, axis=2)
+    color_enhanced_image = pixel_intensities * (np.divide(image, grayscale_image, out=np.zeros_like(image),
+                                                          where=grayscale_image != 0)) * hue_adjust
     color_enhanced_image = color_enhanced_image.astype(np.uint8)
     return color_enhanced_image
 
@@ -185,10 +202,10 @@ def _convert_rgb_to_grayscale(image, normalize=False):
     :return:            Grayscale Image
     :rtype:             numpy.ndarray
     """
-
     bits_per_pixel = np.iinfo(image.dtype).max
-    rgb_weights = np.array([76.245, 19.685, 29.071]) / bits_per_pixel
-    new_image = np.dot(image[..., :3], rgb_weights)
+
+    rgb_weights = np.array([76.245, 19.685, 29.071])
+    new_image = np.dot(image[..., :3], rgb_weights) / bits_per_pixel
     new_image = new_image.astype(np.uint8)
 
     if normalize:
@@ -204,6 +221,8 @@ def kernel_gaussian(size=5, sigma=1, use_opencv=True):
     :type:              int
     :param sigma:       Standard deviation of image
     :type:              float
+    :param use_opencv:  Decide whether or not to use OpenCV implementation
+    :type:              bool
     :return:            Kernel mask
     :rtype:             numpy.ndarray
     """
@@ -215,10 +234,9 @@ def kernel_gaussian(size=5, sigma=1, use_opencv=True):
         # G(x, y) = (1/2*pi*std^2) exp( -x^2 + y^2/ 2*std^2 )
         # G_i(x, y) = K exp(-(x^2+y^2)/c_i^2
         kernel_side = np.linspace(-(size - 1) / 2., (size - 1) / 2., size)
-        x_values, y_values = np.meshgrid(kernel_side, kernel_side)
+        side_x, side_y = np.meshgrid(kernel_side, kernel_side)
         K = 1 / (2 * np.pi * sigma ** 2)
-        c_i = np.sqrt(2) * sigma
-        kernel = K * np.exp(-0.5 * (np.square(x_values) + np.square(y_values)) / np.square(sigma))
+        kernel = K * np.exp(-0.5 * (np.square(side_x) + np.square(side_y)) / np.square(sigma))
         kernel = kernel / np.sum(kernel)
     return kernel
 
@@ -234,20 +252,20 @@ def image_convolution(image, kernel):
     :rtype:             numpy.ndarray
     """
     (N, M) = image.shape[:2]
-    (kernel_N, kernel_M) = kernel.shape[:2]
+    (kernel_N, _) = kernel.shape[:2]
 
     # Add a pad to image border to support kernel mask
     pad = (kernel_N - 1) // 2
     pad_image = cv2.copyMakeBorder(image, pad, pad, pad, pad, cv2.BORDER_REPLICATE)
     convolved_image = np.zeros((N, M), dtype="float64")
-    
+
     # Slide mask over image
-    for y in np.arange(pad, N + pad):
-        for x in np.arange(pad, M + pad):
+    for x_dim in np.arange(pad, N + pad):
+        for y_dim in np.arange(pad, M + pad):
             # Identify region of interest
-            roi = pad_image[y - pad:y + pad + 1, x - pad:x + pad + 1]
+            roi = pad_image[x_dim - pad:x_dim + pad + 1, y_dim - pad:y_dim + pad + 1]
             convolved_area = np.dot(roi, kernel).sum()
-            convolved_image[y - pad, x - pad] = convolved_area
+            convolved_image[x_dim - pad, y_dim - pad] = convolved_area
     return convolved_image
 
 
@@ -257,13 +275,14 @@ if __name__ == '__main__':
         original_image = cv2.imread(my_image)
 
         # Step 1 - Find Image Properties
+        image_mean = np.mean(original_image)
+        print("[INFO] The image mean before enhancement is:  {}".format(image_mean))
         image_std = np.std(original_image)
-        print("[INFO] The image global standard deviation is:  {}".format(image_std))
+        print("[INFO] The image global standard deviation before enhancement is:  {}".format(image_std))
 
         # Step 2 - Convert to grayscale
         gray_image = _convert_rgb_to_grayscale(original_image)
 
-        # import pdb;pdb.set_trace()
         # Step 3 - Adaptive Luminance Enhancement
         luminance_intensity_image = adaptive_luminance_enhancement(gray_image)
 
@@ -272,10 +291,9 @@ if __name__ == '__main__':
 
         # Step 5 - Color Restoration
         enhanced_image = color_restoration(original_image, contrasted_image, gray_image)
-        #contrasted_image = np.stack((contrasted_image,) * 3, axis=-1)
-        #enhanced_image = contrasted_image
 
         # Step 6 - Display results
+        # Need to resize images to make it fit on my laptop screen better
         resize_images = True
         if resize_images:
             original_image = cv2.resize(original_image, (500, 500))
@@ -283,4 +301,10 @@ if __name__ == '__main__':
         output_stack = np.hstack((original_image, enhanced_image))
         cv2.imshow('Filter results', output_stack)
         cv2.waitKey(0)
+
+        # Step 7 - Find enhanced image statistics
+        enhanced_mean = np.mean(enhanced_image)
+        print("[INFO] The image mean after enhancement is:  {}".format(image_mean))
+        enhanced_std = np.std(enhanced_image)
+        print("[INFO] The image global standard deviation after enhancement is:  {}".format(enhanced_std))
     cv2.destroyAllWindows()
