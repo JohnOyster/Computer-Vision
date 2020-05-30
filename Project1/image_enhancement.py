@@ -62,13 +62,11 @@ def test_images():
 #   3. Color restoration
 #       - Convert the intensity images back to color images
 # ----------------------------------------------------------------------------
-def adaptive_luminance_enhancement(image, normalize=True):
+def adaptive_luminance_enhancement(image):
     """Perform the non-linear luminance enhancement formula.
 
     :param image:       Input grayscale image
     :type:              numpy.ndarray
-    :param normalize:   Decide if normalize image [0 1]
-    :type:              bool
     :return:            Luminance Values of image
     :rtype:             numpy.ndarray
     """
@@ -88,9 +86,9 @@ def adaptive_luminance_enhancement(image, normalize=True):
     z_func = np.vectorize(_z_func, otypes=[np.float64])
     z_param = z_func(image)
 
-    # Normalize the input image if needed
+    # Normalize the input image
     image = image.astype(np.float64)
-    new_image = (image / bits_per_pixel) if normalize else image
+    new_image = image / bits_per_pixel
 
     # Apply image enhancement equation I'_n
     luminance_values = 0.5 * (np.power(new_image, 0.75 * z_param + 0.25) +
@@ -119,7 +117,6 @@ def adaptive_contrast_enhancement(image, image_norm, sigma):
     kernel = kernel_gaussian(5, sigma)
     image = image.astype(np.float64)
     convolved_image = gaussian_filter(image, sigma=sigma)
-
     # convolved_image = cv2.filter2D(image, -1, kernel)
 
     # Calculate P parameter
@@ -141,11 +138,11 @@ def adaptive_contrast_enhancement(image, image_norm, sigma):
     # Find the center-surround contrast enhancement pixel intensities
     # S(x,y) = 255 * I_norm(x, y)^E(x, y)
     pixel_intensities = bits_per_pixel * np.power(image_norm, intensity_ratio)
-    pixel_intensities = pixel_intensities.astype(np.uint8)
+    pixel_intensities = np.clip(pixel_intensities, 0, 255).astype(np.uint8)
     return pixel_intensities
 
 
-def color_restoration(image, pixel_intensities, grayscale_image, hue_adjust=0.28):
+def color_restoration(image, pixel_intensities, grayscale_image, hue_adjust=0.45):
     """Perform color restoration on a grayscale image.
 
     :param image:               The original color image
@@ -169,7 +166,7 @@ def color_restoration(image, pixel_intensities, grayscale_image, hue_adjust=0.28
     color_enhanced_image = pixel_intensities * \
                            (np.divide(image, grayscale_image, out=np.zeros_like(image),
                                       where=grayscale_image != 0)) * hue_adjust
-    color_enhanced_image = color_enhanced_image.astype(np.uint8)
+    color_enhanced_image = np.clip(color_enhanced_image, 0, 255).astype(np.uint8)
     return color_enhanced_image
 
 
@@ -183,7 +180,7 @@ class Color(Enum):
     BLUE = 2
 
 
-def _convert_rgb_to_grayscale(image, normalize=False):
+def _convert_rgb_to_grayscale(image):
     """Convert input color image to the intensity (gray-scale) image.
 
     Method in standard NTSC (National Television Standards Committee)
@@ -195,8 +192,6 @@ def _convert_rgb_to_grayscale(image, normalize=False):
 
     :param image:       Image array
     :type:              numpy.ndarray
-    :param normalize:   Decide if normalize image [0 1]
-    :type:              bool
     :return:            Grayscale Image
     :rtype:             numpy.ndarray
     """
@@ -204,10 +199,7 @@ def _convert_rgb_to_grayscale(image, normalize=False):
 
     rgb_weights = np.array([76.245, 19.685, 29.071])
     new_image = np.dot(image[..., :3], rgb_weights) / bits_per_pixel
-    new_image = new_image.astype(np.uint8)
-
-    if normalize:
-        new_image = new_image / bits_per_pixel
+    new_image = np.clip(new_image, 0, 255).astype(np.uint8)
 
     return new_image
 
