@@ -1,30 +1,4 @@
-#!/usr/bin/env python3
-"""CIS 693 - Project 2.
 
-Author: John Oyster
-Date:   June 6, 2020
-Description:
-    DISCLAIMER: Comment text is taken from course handouts and is copyright
-        2020, Dr. Almabrok Essa, Cleveland State University,
-    Objectives:
-        1. Write a program to implement the Histogram of Orientated Gradients
-           (HOG) Algorithm for pedestrian detection. The dataset used to
-           evaluate the descriptor is “NICTA Pedestrian Dataset,” where it
-           contains both the training set and the testing set. The training
-           set contains 1000 positives samples (images contain pedestrians)
-           and 2000 negatives samples (images do not contain pedestrians).
-           The testing set includes 500 positive samples and 500 negative
-           samples. Resize all images to 64 × 128 and use the following set
-           of parameters:
-            - Cell size [8 8]
-            - Block size [16 16]
-            - Gradient operators: G x = [-1 0 1] and G y = [-1 0 1] T
-            - Number of orientation bins = 9
-    Assumptions:
-        1. Unless this statement is remove, 8-bit pixel values
-
-"""
-#  Copyright (c) 2020. John Oyster in agreement with Cleveland State University.
 from enum import Enum
 import os.path
 import cv2
@@ -109,12 +83,11 @@ def compute_weighted_vote(gradient, cell_size=(8, 8), bin_count=9, is_signed=Fal
     gradient_angles = gradient[3]
 
     grad_size_x, grad_size_y = gradient_magnitudes.shape
-    print(gradient_magnitudes.shape)
     cell_size_x, cell_size_y = cell_size
     cell_count_x = int(grad_size_x / cell_size_x)  # Number of cells in x axis
     cell_count_y = int(grad_size_y / cell_size_y)  # Number of cells in y axis
 
-    print("[INFO] Cell counts:  x={} y={}".format(cell_count_x, cell_count_y))
+    #print("[INFO] Cell counts:  x={} y={}".format(cell_count_x, cell_count_y))
     hog_cells = np.zeros((cell_count_x, cell_count_y, bin_count))
 
     prev_x = 0
@@ -129,18 +102,17 @@ def compute_weighted_vote(gradient, cell_size=(8, 8), bin_count=9, is_signed=Fal
             prev_y += cell_size_y
         prev_x += cell_size_x
 
-    print("[DEBUG] Cells array shape:    {}".format(hog_cells.shape))
+    #print("[DEBUG] Cells array shape:    {}".format(hog_cells.shape))
 
     return hog_cells, (cell_count_x, cell_count_y)
 
 
 def contrast_normalize(vector, epsilon=1e-5):
-    print("[DEBUG]  What am I normalizing?:  {}".format(vector.shape))
+    #print("[DEBUG]  What am I normalizing?:  {}".format(vector.shape))
     return vector / np.sqrt(np.linalg.norm(np.square(vector), 2) + np.square(epsilon))
 
 
 def normalize_blocks(cells, cell_size=(8, 8), block_size=(16, 16), bin_count=9):
-    print(cells.shape[:2])
     cell_size_x, cell_size_y = cells.shape[:2]
     block_size_x, block_size_y = block_size
     block_count_x = cell_size_x - 1
@@ -156,7 +128,7 @@ def normalize_blocks(cells, cell_size=(8, 8), block_size=(16, 16), bin_count=9):
         for col in range(block_count_y):
             xrange = row+cells_per_block_x
             yrange = col+cells_per_block_y
-            print("[DEBUG] Row={} Col={}\n\t Getting cells {} and {}".format(row, col, xrange, yrange))
+            #print("[DEBUG] Row={} Col={}\n\t Getting cells {} and {}".format(row, col, xrange, yrange))
             hog_block = cells[row:row + cells_per_block_x, col:col + cells_per_block_y].ravel()
             normalized_blocks[row, col] = contrast_normalize(hog_block)
 
@@ -196,7 +168,7 @@ if __name__ == '__main__':
         hog_blocks, _ = normalize_blocks(cell_histograms)
         # Step 6 - Collect HOG's over detection window
 
-        print(hog_blocks.shape)
+        print(hog_blocks.ravel().shape)
         # Step 7 - Linear SVM
 
     cv2.destroyAllWindows()
