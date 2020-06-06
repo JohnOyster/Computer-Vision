@@ -32,6 +32,7 @@ def gamma_correction(image, gamma=1.0):
     :rtype:         numpy.ndarray
     """
     bits_per_pixel = np.iinfo(image.dtype).max
+
     norm_image = image / np.max(image)
     new_image = bits_per_pixel * np.power(norm_image, gamma)
     new_image = new_image.astype(np.uint8)
@@ -63,6 +64,19 @@ def compute_gradients(image, is_signed=False):
 
 
 def calculate_histogram(magnitudes, angles, bin_count=9, is_signed=False):
+    """Calculate the localized histogram of each cell.
+
+    :param magnitudes:          The maginitude of each cell
+    :type:                      np.ndarray
+    :param angles:              The angle of each cell
+    :type:                      np.ndarray
+    :param bin_count:           The bins of each cell
+    :type:                      int
+    :param is_signed:           Should angular data be signed?
+    :type:                      bool
+    :return:                    Histogram of cell
+    :rtype:                     np.array
+    """
     cell_size_x, cell_size_y = magnitudes.shape
     orientation_size = 360 if is_signed else 180
     bin_width = orientation_size // bin_count
@@ -76,6 +90,19 @@ def calculate_histogram(magnitudes, angles, bin_count=9, is_signed=False):
 
 
 def compute_weighted_vote(gradient, cell_size=(8, 8), bin_count=9, is_signed=False):
+    """Compute the weighted vote of each cell.
+
+    :param gradient:            Gradient value of each cell
+    :type:                      np.ndarray
+    :param cell_size:           2D cell size
+    :type:                      tuple
+    :param bin_count:           number of bins
+    :type:                      int
+    :param is_signed:           is the orientatinos signed or not
+    :type:                      bool
+    :return:                    weighted histgram
+    :rtype:                     np.ndarray
+    """
 
     gradient_x = gradient[0]
     gradient_y = gradient[1]
@@ -108,11 +135,33 @@ def compute_weighted_vote(gradient, cell_size=(8, 8), bin_count=9, is_signed=Fal
 
 
 def contrast_normalize(vector, epsilon=1e-5):
+    """Performt the L2-norm on block.
+
+    :param vector:          The input
+    :type:                  np.ndarray
+    :param epsilon:         That CYA value
+    :type:                  float
+    :return:                Normalized block
+    :rtype"                 np.ndarray
+    """
     #print("[DEBUG]  What am I normalizing?:  {}".format(vector.shape))
     return vector / np.sqrt(np.linalg.norm(np.square(vector), 2) + np.square(epsilon))
 
 
 def normalize_blocks(cells, cell_size=(8, 8), block_size=(16, 16), bin_count=9):
+    """Normalize all the things!
+
+    :param cells:           Input cell
+    :type:                  np.ndarray
+    :param cell_size:       2D tuple
+    :type:                  tuple
+    :param block_size:      2D tuple
+    :type:                  tuple
+    :param bin_count:       Number of bins
+    :type:                  bin
+    :return:                Array of normalized blocks
+    :rtype:                 np.ndarray
+    """
     cell_size_x, cell_size_y = cells.shape[:2]
     block_size_x, block_size_y = block_size
     block_count_x = cell_size_x - 1
