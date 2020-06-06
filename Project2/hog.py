@@ -1,4 +1,30 @@
+#!/usr/bin/env python3
+"""CIS 693 - Project 2.
 
+Author: John Oyster
+Date:   June 6, 2020
+Description:
+    DISCLAIMER: Comment text is taken from course handouts and is copyright
+        2020, Dr. Almabrok Essa, Cleveland State University,
+    Objectives:
+        1. Write a program to implement the Histogram of Orientated Gradients
+           (HOG) Algorithm for pedestrian detection. The dataset used to
+           evaluate the descriptor is “NICTA Pedestrian Dataset,” where it
+           contains both the training set and the testing set. The training
+           set contains 1000 positives samples (images contain pedestrians)
+           and 2000 negatives samples (images do not contain pedestrians).
+           The testing set includes 500 positive samples and 500 negative
+           samples. Resize all images to 64 × 128 and use the following set
+           of parameters:
+            - Cell size [8 8]
+            - Block size [16 16]
+            - Gradient operators: G x = [-1 0 1] and G y = [-1 0 1] T
+            - Number of orientation bins = 9
+    Assumptions:
+        1. Unless this statement is remove, 8-bit pixel values
+
+"""
+#  Copyright (c) 2020. John Oyster in agreement with Cleveland State University.
 from enum import Enum
 import os.path
 import cv2
