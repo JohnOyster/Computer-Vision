@@ -35,3 +35,48 @@ Description:
 
 """
 #  Copyright (c) 2020. John Oyster in agreement with Cleveland State University.
+import cv2
+import numpy as np
+from scipy.io import loadmat
+
+
+def process_mat_file(mat_file="./Data/ORL_64x64.mat"):
+    """Process mat format into Python dictionary.
+    
+    :param mat_file:        Pre-7.3 MATLAB mat file path
+    :type:                  str
+    :return:                Dictionary of faces
+    :rtype:                 dict
+    """
+    # Since matrix is pre-MATLAB 7.3 format, use 'loadmat'
+    # ASSUMPTION: Expecting:
+    #   'gnd' key -->  person identifier
+    #   'fea' key -->  person 'features' or image
+    mat = loadmat(mat_file)
+
+    # Enumerate over image data
+    image_dictionary = {}
+    for count, person_id in enumerate(mat['gnd']):
+        person_id = int(person_id)
+
+        # Acquire the current image array from the 'features' array
+        # Numpy has a quirk that reshaping (64, 64) will rotate the data 90 degrees
+        # so make sure to transpose the data.
+        image = np.transpose(mat['fea'][count].reshape((64, 64)))
+
+        # Create new dictionary to store data
+        # Format:  dict( person_id : list( image_0, image_1, etc..))
+        if person_id in image_dictionary:
+            image_dictionary[person_id].append(image)
+        else:
+            image_dictionary[person_id] = [image]
+
+    return image_dictionary
+
+
+
+if __name__ == '__main__':
+    dataset = process_mat_file()
+    print(dataset[1][9])
+    print(type(dataset))
+    cv2.destroyAllWindows()
