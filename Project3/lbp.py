@@ -19,20 +19,8 @@ Description:
            - Divide the image into small blocks 16×16.
            - Extract the information (histogram) of each block separately using LBP.
            - Concatenate these local histograms to form a final feature vector.
-        2. Write a program to train and test the linear Support Vector Machine (SVM)
-           classifier for face recognition using the extracted features from part 1.
-           a) Train the SVM classifier with LBP features of 70% of the dataset
-              randomly selected.
-           b) Classify the LBP features of the rest 30% of the dataset using the
-              trained SVM model.
-           c) Repeat the process of (a) and (b) 10 times and compute the average
-              recognition accuracy.
-        3. Repeat the experiment in Part 2 for training the SVM classifier with
-           different set of kernel functions (e. g. rbf, polynomial, etc.).
-        4. Repeat the experiment in Part 2 using any other different classifier.
     Assumptions:
         1. Unless this statement is remove, 8-bit pixel values
-
 """
 #  Copyright (c) 2020. John Oyster in agreement with Cleveland State University.
 import warnings
