@@ -27,6 +27,7 @@ import warnings
 import cv2
 import numpy as np
 from scipy.io import loadmat
+from matplotlib import pyplot as plt
 
 
 def process_mat_file(mat_file="./Data/ORL_64x64.mat"):
@@ -75,7 +76,6 @@ def pad_image(image, pad_width=1, pad_type=cv2.BORDER_CONSTANT):
     :return:                Padded image
     :rtype:                 numpy.ndarray
     """
-    #print("[DEBUG] Input image to pad function is {}".format(image.shape))
     pad_value = [0, 0, 0]
     padded_image = cv2.copyMakeBorder(image, pad_width, pad_width, pad_width,
                                       pad_width, pad_type, value=pad_value)
@@ -126,6 +126,11 @@ def calculate_lbp_pixel(image, x, y):
 
 
 def calculate_lbp_region(image):
+    """
+
+    :param image:
+    :return:
+    """
     width, height = image.shape
 
     #print("[DEBUG] Input image to region is {}".format(image.shape))
@@ -143,6 +148,12 @@ def calculate_lbp_region(image):
 
 
 def calculate_lbp(image, region_size=(16, 16)):
+    """
+
+    :param image:
+    :param region_size:
+    :return:
+    """
     # Get image data
     width, height = image.shape
     rx, ry = region_size
@@ -163,6 +174,37 @@ def calculate_lbp(image, region_size=(16, 16)):
     return lbp_descriptor.ravel()
 
 
+def display_lbp(plot_data):
+    figure = plt.figure()
+    for item in range(plot_data):
+        current_dict = output_list[item]
+        current_img = current_dict["img"]
+        current_xlabel = current_dict["xlabel"]
+        current_ylabel = current_dict["ylabel"]
+        current_xtick = current_dict["xtick"]
+        current_ytick = current_dict["ytick"]
+        current_title = current_dict["title"]
+        current_type = current_dict["type"]
+        current_plot = figure.add_subplot(1, len(plot_data), item + 1)
+        if current_type == "gray":
+            current_plot.imshow(current_img, cmap=plt.get_cmap('gray'))
+            current_plot.set_title(current_title)
+            current_plot.set_xticks(current_xtick)
+            current_plot.set_yticks(current_ytick)
+            current_plot.set_xlabel(current_xlabel)
+            current_plot.set_ylabel(current_ylabel)
+        elif current_type == "histogram":
+            current_plot.plot(current_img, color="black")
+            current_plot.set_xlim((0, 260))
+            current_plot.set_title(current_title)
+            current_plot.set_xlabel(current_xlabel)
+            current_plot.set_ylabel(current_ylabel)
+            ytick_list = [int(i) for i in current_plot.get_yticks()]
+            current_plot.set_yticklabels(ytick_list, rotation= 0)
+
+    plt.show()
+
+
 if __name__ == '__main__':
     # Load the data set
     # Expecting 40 people with 10 images each
@@ -175,5 +217,42 @@ if __name__ == '__main__':
         for image_sample in images:
             calculate_lbp(image_sample)
             # Calculate the LBP histogram descriptor for each image
+
+            image_lbp = np.zeros((height, width, 3), np.uint8)
+            for i in range(0, height):
+                for j in range(0, width):
+                    image_lbp[i, j] = lbp_calculated_pixel(image_gray, i, j)
+            hist_lbp = cv2.calcHist([image_lbp], [0], None, [256], [0, 256])
+            output_list = []
+            output_list.append({
+                "img": image_gray,
+                "xlabel": "",
+                "ylabel": "",
+                "xtick": [],
+                "ytick": [],
+                "title": "Gray Image",
+                "type": "gray"
+            })
+            output_list.append({
+                "img": image_lbp,
+                "xlabel": "",
+                "ylabel": "",
+                "xtick": [],
+                "ytick": [],
+                "title": "LBP Image",
+                "type": "gray"
+            })
+            output_list.append({
+                "img": hist_lbp,
+                "xlabel": "Bins",
+                "ylabel": "Number of pixels",
+                "xtick": None,
+                "ytick": None,
+                "title": "Histogram(LBP)",
+                "type": "histogram"
+            })
+
+            show_output(output_list)
+
 
     cv2.destroyAllWindows()

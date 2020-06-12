@@ -32,7 +32,7 @@ import matplotlib.pyplot as plt
 from matplotlib import style
 import cv2
 from sklearn.svm import SVC
-from Project2 import hog
+import hog
 
 
 def get_good_train_set(directory="./NICTA/TrainSet/PositiveSamples"):
@@ -117,7 +117,7 @@ if __name__ == '__main__':
     C = 1.0  # SVM regularization parameter
     lin_svc = SVC(kernel='linear', C=C).fit(train_data, tag_data)
     rbf_svc = SVC(kernel='rbf', C=C).fit(train_data, tag_data)
-    poly_svc = SVC(kernel='poly', C=C).fit(train_data, tag_data)
+    poly_svc = SVC(kernel='poly', C=C, degree=2).fit(train_data, tag_data)
 
     # title for the classifiers
     titles = ['SVC with linear kernel',
