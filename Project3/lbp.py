@@ -96,7 +96,12 @@ def threshold_pixel(image, center, x, y):
     :return:            Thresholded pixel value w.r.t center
     ;rtype:             int
     """
-    value = 1 if float(image[x][y]) - center >= 0 else 0
+    value = 0
+    try:
+        value = 1 if float(image[x][y]) - center >= 0 else 0
+    except IndexError:
+        # Padding is messed up for non-project cases
+        pass
     return value
 
 
@@ -176,8 +181,8 @@ def calculate_lbp(image, region_size=(16, 16)):
 
 def display_lbp(plot_data):
     figure = plt.figure()
-    for item in range(plot_data):
-        current_dict = output_list[item]
+    for item in range(len(plot_data)):
+        current_dict = plot_data[item]
         current_img = current_dict["img"]
         current_xlabel = current_dict["xlabel"]
         current_ylabel = current_dict["ylabel"]
@@ -200,59 +205,82 @@ def display_lbp(plot_data):
             current_plot.set_xlabel(current_xlabel)
             current_plot.set_ylabel(current_ylabel)
             ytick_list = [int(i) for i in current_plot.get_yticks()]
-            current_plot.set_yticklabels(ytick_list, rotation= 0)
+            current_plot.set_yticklabels(ytick_list, rotation=0)
 
     plt.show()
 
 
-if __name__ == '__main__':
+def main():
+    """Execute this routine if this file is called directly.
+
+    This function is used to test the parameters of the LBP method
+    and make sure that it works.
+
+    :return:        Errno = 0 if good
+    :rtype:         int
+    """
     # Load the data set
     # Expecting 40 people with 10 images each
     data_set = process_mat_file()
 
+    num_of_samples = 1
     for person, images in data_set.items():
         print("[INFO] Processing Person {}".format(person))
 
         # Cycles through each sample image for each person
         for image_sample in images:
-            calculate_lbp(image_sample)
-            # Calculate the LBP histogram descriptor for each image
+            # Get image properties
+            height, width = image_sample.shape
 
-            image_lbp = np.zeros((height, width, 3), np.uint8)
-            for i in range(0, height):
-                for j in range(0, width):
-                    image_lbp[i, j] = lbp_calculated_pixel(image_gray, i, j)
-            hist_lbp = cv2.calcHist([image_lbp], [0], None, [256], [0, 256])
-            output_list = []
-            output_list.append({
-                "img": image_gray,
-                "xlabel": "",
-                "ylabel": "",
-                "xtick": [],
-                "ytick": [],
-                "title": "Gray Image",
-                "type": "gray"
-            })
-            output_list.append({
-                "img": image_lbp,
-                "xlabel": "",
-                "ylabel": "",
-                "xtick": [],
-                "ytick": [],
-                "title": "LBP Image",
-                "type": "gray"
-            })
-            output_list.append({
-                "img": hist_lbp,
-                "xlabel": "Bins",
-                "ylabel": "Number of pixels",
-                "xtick": None,
-                "ytick": None,
-                "title": "Histogram(LBP)",
-                "type": "histogram"
-            })
+            # Calculate the LBP descriptor
+            image_lbp = calculate_lbp(image_sample)
 
-            show_output(output_list)
+            if num_of_samples > 0:
+                # Calculate the LBP histogram descriptor for each image
+                image_lbp = np.zeros((height, width, 3), np.uint8)
+                for row in range(height):
+                    for col in range(width):
+                        image_lbp[row, col] = calculate_lbp_pixel(image_sample, row, col)
+                hist_lbp = cv2.calcHist([image_lbp], [0], None, [256], [0, 256])
+                output_list = []
+                output_list.append({
+                    "img": image_sample,
+                    "xlabel": "",
+                    "ylabel": "",
+                    "xtick": [],
+                    "ytick": [],
+                    "title": "Sample Image",
+                    "type": "gray"
+                })
+                output_list.append({
+                    "img": image_lbp,
+                    "xlabel": "",
+                    "ylabel": "",
+                    "xtick": [],
+                    "ytick": [],
+                    "title": "LBP Image",
+                    "type": "gray"
+                })
+                output_list.append({
+                    "img": hist_lbp,
+                    "xlabel": "Bins",
+                    "ylabel": "Number of pixels",
+                    "xtick": None,
+                    "ytick": None,
+                    "title": "Histogram (LBP)",
+                    "type": "histogram"
+                })
+
+                display_lbp(output_list)
+
+                num_of_samples -= 1
+
+    return 0
 
 
+if __name__ == '__main__':
+    # Enter main program
+    main()
+
+    # Clean-up
     cv2.destroyAllWindows()

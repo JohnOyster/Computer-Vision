@@ -44,7 +44,7 @@ templates_path = ['_templates']
 source_suffix = '.rst'
 
 # The master toctree document.
-master_doc = 'index'
+master_doc = 'Project3'
 
 # General information about the project.
 project = 'CIS 693 -- Computer Vision'
@@ -122,9 +122,13 @@ htmlhelp_basename = 'CIS693--ComputerVisiondoc'
 # -- Options for LaTeX output ---------------------------------------------
 
 latex_elements = {
+    # Condense pages
+    #
+    'extraclassoptions': 'openany,oneside',
+
     # The paper size ('letterpaper' or 'a4paper').
     #
-    # 'papersize': 'letterpaper',
+    'papersize': 'letterpaper',
 
     # The font size ('10pt', '11pt' or '12pt').
     #

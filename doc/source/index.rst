@@ -1,15 +1,13 @@
 Welcome to CIS 693 -- Computer Vision's documentation!
 ======================================================
-
-.. automodule:: Project3.lbp
-   :members:
-
-.. automodule:: Project3.train_svm
-   :members:
+This is the main TOC file for the CIS693 Work
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+    :caption: Table of Contents
+    :name: mastertoc
+    :maxdepth: 2
+
+    Project3 <Project3.rst>
 
 
 
