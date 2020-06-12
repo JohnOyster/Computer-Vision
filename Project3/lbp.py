@@ -4,6 +4,7 @@
 Author: John Oyster
 Date:   June 12, 2020
 Description:
+
     DISCLAIMER: Comment text is taken from course handouts and is copyright
         2020, Dr. Almabrok Essa, Cleveland State University,
     Objectives:
@@ -14,6 +15,7 @@ Description:
         different specifications, including slightly varying illumination,
         different facial expressions such as open and closed eyes, smiling and
         non-smiling, and facial details like wearing glasses.
+
         1. Write a program to implement the Local Binary Pattern (LBP) Algorithm
            for face recognition.
            - Divide the image into small blocks 16×16.
@@ -94,7 +96,7 @@ def threshold_pixel(image, center, x, y):
     :param y:           y coordinate to calculate in 'image'
     :type:              int
     :return:            Thresholded pixel value w.r.t center
-    ;rtype:             int
+    :rtype:             int
     """
     value = 0
     try:
@@ -106,12 +108,23 @@ def threshold_pixel(image, center, x, y):
 
 
 def calculate_lbp_pixel(image, x, y):
-    """
+    """Perform the LBP operator on a given pixel.
+
+    Order and format:
      32 |  64 | 128
     ----+-----+-----
      16 |   0 |   1
     ----+-----+-----
      8  |   4 |   2
+
+    :param image:           Input image
+    :type:                  numpy.ndarray
+    :param x:               Column pixel of interest
+    :type:                  int
+    :param y:               Row pixel of interst
+    :type:                  int
+    :return:                LBP value
+    :rtype:                 numpy.ndarray
     """
     center = image[x][y]
     binary_code = np.empty(8)
@@ -131,14 +144,18 @@ def calculate_lbp_pixel(image, x, y):
 
 
 def calculate_lbp_region(image):
-    """
+    """Calculate the LBP of a given region from 'calculate_lbp'.
 
-    :param image:
-    :return:
+    Note: this function relies on being called from 'caluclate_lbp' first.
+
+    :param image:       Input image region
+    :type:              numpy.ndarray
+    :return:            LBP histogram of region
+    :rtype:             numpy.ndarray
     """
+    # Get image properties
     width, height = image.shape
 
-    #print("[DEBUG] Input image to region is {}".format(image.shape))
     # Step 1: Pad the input images to allow LBP thresholding operator space
     #         to work on the edge pixel cases.
     padded_image = pad_image(image)
@@ -153,11 +170,18 @@ def calculate_lbp_region(image):
 
 
 def calculate_lbp(image, region_size=(16, 16)):
-    """
+    """Calculate the LBP of a given input image.
 
-    :param image:
-    :param region_size:
-    :return:
+    This function will create an LBP descriptor of a given input image. It
+    is important to make sure the image dimendions are divisible by the
+    region_size parameter.
+
+    :param image:           Input image
+    :type:                  numpy.ndarray
+    :param region_size:     Size to sub-divide image
+    :type:                  tuple
+    :return:                LBP descriptor
+    :rtype:                 numpy.ndarray
     """
     # Get image data
     width, height = image.shape
@@ -169,19 +193,23 @@ def calculate_lbp(image, region_size=(16, 16)):
         warnings.warn("In calculate_lbp: input image dimensions are not divisible by region_size")
     num_regions_x = width // rx
     num_regions_y = height // ry
-    #print("[DEBUG] Image contans x={} y={} regions".format(num_regions_x, num_regions_y))
-    # TODO(John): Need to figure out the initialization size
-    lbp_descriptor = np.empty((num_regions_x, num_regions_y, 256))
+    lbp_descriptor = np.empty((num_regions_x, num_regions_y, np.iinfo(np.uint8).max+1))
     for row in range(num_regions_y):
         for col in range(num_regions_x):
-            lbp_descriptor[row, col] = calculate_lbp_region(image[row*ry:row*ry+ry, col*rx:col*rx+rx])
+            lbp_descriptor[row, col] = calculate_lbp_region(image[row*ry:row*ry+ry,
+                                                                  col*rx:col*rx+rx])
 
     return lbp_descriptor.ravel()
 
 
 def display_lbp(plot_data):
+    """Display before and after of LBP plus histogram.
+
+    :param plot_data:   unique structure to plot
+    :type:              dictionary
+    """
     figure = plt.figure()
-    for item in range(len(plot_data)):
+    for item, _ in enumerate(plot_data):
         current_dict = plot_data[item]
         current_img = current_dict["img"]
         current_xlabel = current_dict["xlabel"]

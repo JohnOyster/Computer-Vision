@@ -423,6 +423,9 @@ const-naming-style=UPPER_CASE
 # style.
 #const-rgx=
 
+# Define certain errors or warnings to disable
+disable=C0103
+
 # Minimum line length for functions/classes that require docstrings, shorter
 # ones are exempt.
 docstring-min-length=-1

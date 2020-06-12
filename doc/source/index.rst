@@ -1,3 +1,5 @@
+:orphan:
+
 Welcome to CIS 693 -- Computer Vision's documentation!
 ======================================================
 This is the main TOC file for the CIS693 Work

@@ -1,31 +1,34 @@
-#  Copyright (c) 2020. John Oyster in agreement with Cleveland State University.
-
 #!/usr/bin/env python3
 """CIS 693 - Project 3.
 
 Author: John Oyster
 Date:   June 12, 2020
 Description:
+
     DISCLAIMER: Comment text is taken from course handouts and is copyright
         2020, Dr. Almabrok Essa, Cleveland State University,
     Objectives:
         The objective of this project is to generate a face recognition system.
-        The dataset used is AT&T data (ORL). It contains 40 distinct subjects
+        The data set used is AT&T data (ORL). It contains 40 distinct subjects
         that have a total of 400 face images corresponding to 10  different
         images per subject. The images are taken at different times with
         different specifications, including slightly varying illumination,
         different facial expressions such as open and closed eyes, smiling and
         non-smiling, and facial details like wearing glasses.
+
         2. Write a program to train and test the linear Support Vector Machine (SVM)
            classifier for face recognition using the extracted features from part 1.
+
            a) Train the SVM classifier with LBP features of 70% of the dataset
               randomly selected.
            b) Classify the LBP features of the rest 30% of the dataset using the
               trained SVM model.
            c) Repeat the process of (a) and (b) 10 times and compute the average
               recognition accuracy.
+
         3. Repeat the experiment in Part 2 for training the SVM classifier with
            different set of kernel functions (e. g. rbf, polynomial, etc.).
+
         4. Repeat the experiment in Part 2 using any other different classifier.
 """
 #  Copyright (c) 2020. John Oyster in agreement with Cleveland State University.
@@ -39,10 +42,12 @@ from Project3 import lbp
 
 
 def generate_lbp_descriptors(data):
-    """
+    """Take an input data set and generate LBP descriptors.
 
-    :param data:
-    :return:
+    :param data:        Input dictionary from 'lbp.py'
+    :type:              dictionary
+    :return:            Output LBP descriptor
+    :rtype:             numpy.ndarray
     """
     entry_count = sum([len(data[x]) for x in data if isinstance(data[x], list)])
     for person_id, feature_set in data.items():
@@ -53,7 +58,15 @@ def generate_lbp_descriptors(data):
         yield descriptors, tags
 
 
-if __name__ == '__main__':
+def main():
+    """Execute this routine if this file is called directly.
+
+    This function is used to test the parameters of the LBP method
+    and make sure that it works.
+
+    :return:        Errno = 0 if good
+    :rtype:         int
+    """
     number_of_trials = 10
     mat_data = lbp.process_mat_file()
 
@@ -76,7 +89,8 @@ if __name__ == '__main__':
         train_tag, valid_tag, test_tag = [], [], []
         for X, y in generate_lbp_descriptors(mat_data):
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, shuffle=True)
-            X_train, X_valid, y_train, y_valid = train_test_split(X_train, y_train, test_size=0.15, shuffle=True)
+            X_train, X_valid, y_train, y_valid = train_test_split(X_train, y_train,
+                                                                  test_size=0.15, shuffle=True)
             train_set.append(X_train)
             train_tag.append(y_train)
             valid_set.append(X_valid)
@@ -123,5 +137,5 @@ if __name__ == '__main__':
     print("[INFO] kNN Std. Deviation = {}".format(knn_score.std()))
 
 
-
-
+if __name__ == '__main__':
+    main()
