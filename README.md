@@ -23,3 +23,9 @@ Project 3
 Linear Binary Pattern Algorithm
 
 See: https://ieeexplore.ieee.org/abstract/document/1717463
+
+Project 4
+---------
+Image Registration using SIFT
+
+See: https://www.cs.ubc.ca/~lowe/papers/iccv99.pdf
