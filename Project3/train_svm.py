@@ -38,7 +38,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_val_score
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
-from Project3 import lbp
+import lbp
 
 
 def generate_lbp_descriptors(data):
@@ -68,7 +68,7 @@ def main():
     :rtype:         int
     """
     number_of_trials = 10
-    mat_data = lbp.process_mat_file()
+    mat_data = lbp.process_mat_file(mat_file="/home/john/Workspace/CIS693/Project3/Data/ORL_64x64.mat")
 
     # Set Classifier parameters
     C = 1.0  # SVM regularization parameter

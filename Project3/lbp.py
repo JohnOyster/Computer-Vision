@@ -249,9 +249,10 @@ def main():
     """
     # Load the data set
     # Expecting 40 people with 10 images each
-    data_set = process_mat_file()
+    data_set = process_mat_file(mat_file="/home/john/Workspace/CIS693/Project3/Data/ORL_64x64.mat")
 
-    num_of_samples = 1
+    # Set this to something non-zero to display stuff
+    num_of_samples = 0
     for person, images in data_set.items():
         print("[INFO] Processing Person {}".format(person))
 
@@ -263,7 +264,7 @@ def main():
             # Calculate the LBP descriptor
             image_lbp = calculate_lbp(image_sample)
 
-            if num_of_samples > 0:
+            if num_of_samples > 1:
                 # Calculate the LBP histogram descriptor for each image
                 image_lbp = np.zeros((height, width, 3), np.uint8)
                 for row in range(height):
