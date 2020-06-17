@@ -2,5 +2,5 @@
 .idea/
 venv/
 .pyc
-!/doc/build/doctrees/*
-!/doc/build/latex/*
+doc/build/*
+
