@@ -55,8 +55,17 @@ def get_image(filename):
 
 
 def extract_sift_features(image, key_point_limit=400):
+    """Extract features from an image using OpenCV.
 
+    :param image:               Input grayscale image
+    :type:                      numpy.ndarray
+    :param key_point_limit:     Limit number of features
+    :type:                      int
+    :return:                    List of key points and descriptors
+    :type:                      tuple
+    """
     # Get the SIFT Features using OpenCV
+    # pylint: disable=no-member
     sift = cv2.xfeatures2d.SIFT_create()
 
     # Extract key points and SIFT descriptors
@@ -84,9 +93,24 @@ def extract_sift_features(image, key_point_limit=400):
 
 
 def match_sift_descriptors(image1_desc, image2_desc, max_distance=3000.0):
+    """Match image SIFT descriptors using Euclidean distance.
+
+    :param image1_desc:         SIFT descriptors from image 1
+    :type:                      list
+    :param image2_desc:         SIFT descriptors from image 2
+    :type:                      list
+    :param max_distance:        Maximum distance to consider between matches
+    :type:                      float
+    :return:                    List of OpenCV DMatch objects
+    :rtype:                     list
+    """
     matches = []
+    # Need to maintain descriptor index
+    # Image one will be the query source and image 2 will be the
+    #   train destination
     for query_index, desc1 in enumerate(image1_desc):
         for train_index, desc2 in enumerate(image2_desc):
+            # Use SSD for distance
             distance = np.square(desc1 - desc2).sum()
             if distance < max_distance:
                 # Matches contain:
@@ -103,16 +127,39 @@ def match_sift_descriptors(image1_desc, image2_desc, max_distance=3000.0):
 
 
 def qualify_matches(matches, good_percentage=1.0):
+    """Sort matches so more prominent ones are first.
+
+    :param matches:         List of DMatch objects
+    :type:                  list
+    :param good_percentage: Percent of matches to accept
+    :type:                  float
+    :return:                List of DMatch objects
+    :rtpe:                  list
+    """
     # Sort matches
     matches = sorted(matches, key=lambda x: x.distance, reverse=False)
 
     # Return only good matches
+    if good_percentage > 1.0 or good_percentage < 0:
+        good_percentage = 1.0
     good_match_count = int(len(matches) * good_percentage)
     return matches[:good_match_count]
 
 
 def compute_transformation_matrix(image1_points, image2_points, matches):
+    """Find the Affine transformation 3x3 matrix.
+
+    :param image1_points:       SIFT key points from image 1
+    :type:                      list
+    :param image2_points:       SIFT key points from image 2
+    :type:                      list
+    :param matches:             List of DMatch objects
+    :type:                      list
+    :return:                    3x3 Affine matrix
+    :rtype:                     numpy.ndarray
+    """
     # Extract location of good matches
+    # OpenCV needs float32 for this and not float64
     points_1 = np.zeros((len(matches), 2), dtype=np.float32)
     points_2 = np.zeros((len(matches), 2), dtype=np.float32)
 
@@ -127,12 +174,47 @@ def compute_transformation_matrix(image1_points, image2_points, matches):
 
 
 def align_image(image, affine_matrix):
-    # TODO(John): Need to verify size stuff here.
+    """Transform image using Affine transformation matrix.
+
+    :param image:       Image to manipulate
+    :type:              numpy.ndarray
+    :param affine_matrix: 3x3 transformation matrix
+    :type:              numpy.ndarray
+    :returns:           Transformed image
+    :rtype:             numpy.ndarray
+    """
     size_x, size_y = image.shape
     return cv2.warpAffine(image, affine_matrix, (size_y, size_x))
 
 
+def display_side_by_side(image1, image2):
+    """Show two images side by side.
+
+    :param image1:      Image 1
+    :type:              numpy.ndarray
+    :param image2:      Image 2
+    :type:              numpy.ndarray
+    """
+    # Normalize color to match
+    image1 = cv2.cvtColor(image1, cv2.COLOR_GRAY2RGB)
+    image2 = cv2.cvtColor(image2, cv2.COLOR_GRAY2RGB)
+
+    # Create subplots
+    fig = plt.figure()
+    fig.add_subplot(1, 2, 1)
+    plt.imshow(image1)
+    fig.add_subplot(1, 2, 2)
+    plt.imshow(image2)
+    plt.show(block=True)
+
+
 def find_registration_error(image1, image2):
+    """Calculate the image registration error.
+
+    :param image1:
+    :param image2:
+    :return:
+    """
     # Convert to grayscale if needed
     if len(image1.shape) > 2:
         image1 = cv2.cvtColor(image1, cv2.COLOR_RGB2GRAY)
@@ -144,15 +226,23 @@ def find_registration_error(image1, image2):
 
 
 def main():
+    """Execute this routine if this file is called directly.
+
+    This function is used to test the parameters of the SIFT method
+    and make sure that it works.
+
+    :return:        Errno = 0 if good
+    :rtype:         int
+    """
     # Define maximum number of features to calculate
     max_features = 400
 
     # Read in test images
     image1 = get_image("./Data/image1.png")
     image2 = get_image("./Data/image2.png")
-    image2_color = cv2.imread("./Data/image2.png")
 
     # Initiate SIFT detector
+    # pylint: disable=unused-variable
     orb = cv2.ORB(max_features)
 
     # Compute the SIFT features for the test images
@@ -163,7 +253,7 @@ def main():
     nnn_matches = match_sift_descriptors(image1_descriptors, image2_descriptors)
 
     # create BFMatcher object
-    #bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+    # bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
     bf = cv2.BFMatcher(cv2.NORM_L1, crossCheck=True)
 
     # Match descriptors.
@@ -174,8 +264,12 @@ def main():
     bf_matches = qualify_matches(bf_matches)
 
     # Draw first 20 matches.
-    image_matched_nnn = cv2.drawMatches(image1, image1_key_points, image2, image2_key_points, nnn_matches[:20], None, flags=2)
-    image_matched_bf = cv2.drawMatches(image1, image1_key_points, image2, image2_key_points, bf_matches[:20], None, flags=2)
+    image_matched_nnn = cv2.drawMatches(image1, image1_key_points,
+                                        image2, image2_key_points,
+                                        nnn_matches[:20], None, flags=2)
+    image_matched_bf = cv2.drawMatches(image1, image1_key_points,
+                                       image2, image2_key_points,
+                                       bf_matches[:20], None, flags=2)
     plt.imshow(image_matched_nnn)
     plt.show()
     plt.imshow(image_matched_bf)
@@ -186,15 +280,9 @@ def main():
 
     # Transform image2 so that it aligns with image1
     transformed_image = align_image(image2, bf_matix)
-    image1 = cv2.cvtColor(image1, cv2.COLOR_GRAY2RGB)
-    transformed_image = cv2.cvtColor(transformed_image, cv2.COLOR_GRAY2RGB)
 
-    fig = plt.figure()
-    fig.add_subplot(1, 2, 1)
-    plt.imshow(image1)
-    fig.add_subplot(1, 2, 2)
-    plt.imshow(transformed_image)
-    plt.show(block=True)
+    # Show transformed image
+    display_side_by_side(image1, transformed_image)
 
     # Compute the registration error
     reg_error = find_registration_error(image1, transformed_image)
