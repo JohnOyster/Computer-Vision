@@ -221,8 +221,11 @@ def find_registration_error(image1, image2):
     if len(image2.shape) > 2:
         image2 = cv2.cvtColor(image2, cv2.COLOR_RGB2GRAY)
 
+    size_x = max(image1.shape[0], image2.shape[0])
+    size_y = max(image1.shape[1], image2.shape[1])
+
     # Find error using sum of squared differences
-    return np.square(image1 - image2).sum()
+    return np.square(image1 - image2).sum() / (size_x * size_y)
 
 
 def main():
@@ -277,16 +280,35 @@ def main():
 
     # Compute the Affine transformation matrix
     bf_matix = compute_transformation_matrix(image1_key_points, image2_key_points, bf_matches)
+    nnn_matrix = compute_transformation_matrix(image1_key_points, image2_key_points, nnn_matches)
 
     # Transform image2 so that it aligns with image1
-    transformed_image = align_image(image2, bf_matix)
+    bf_transformed_image = align_image(image2, bf_matix)
+    nnn_transformed_image = align_image(image2, nnn_matrix)
 
     # Show transformed image
-    display_side_by_side(image1, transformed_image)
+    display_side_by_side(image1, bf_transformed_image)
+    display_side_by_side(image1, nnn_transformed_image)
 
     # Compute the registration error
-    reg_error = find_registration_error(image1, transformed_image)
-    print(reg_error)
+    # Find the registration error between image 1 and image 2
+    orig_reg_error = find_registration_error(image1, image2)
+    bf_reg_error = find_registration_error(image1, bf_transformed_image)
+    nnn_reg_error = find_registration_error(image1, nnn_transformed_image)
+    print("[INFO] Original registration error between image 1 and image 2:  {}".format(orig_reg_error))
+    print("[INFO] BFMatch registration error between image 1 and image 2:  {}".format(bf_reg_error))
+    print("[INFO] NNN registration error between image 1 and image 2:  {}".format(nnn_reg_error))
+
+    objects = ('Original', 'BFMatch', 'NNN')
+    y_pos = np.arange(len(objects))
+    performance = [orig_reg_error, bf_reg_error, nnn_reg_error]
+
+    plt.bar(y_pos, performance, align='center', alpha=0.5)
+    plt.xticks(y_pos, objects)
+    plt.ylabel('Error')
+    plt.title('Registration Error between images')
+
+    plt.show()
 
     return 0
 
