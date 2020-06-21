@@ -33,3 +33,5 @@ See: https://www.cs.ubc.ca/~lowe/papers/iccv99.pdf
 Project 5
 ---------
 3D Indoor Scene Reconstruction using Microsoft Kinect Data
+
+See: https://www.mdpi.com/2076-3417/9/12/2478/pdf
