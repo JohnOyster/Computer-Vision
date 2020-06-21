@@ -173,7 +173,7 @@ def calculate_lbp(image, region_size=(16, 16)):
     """Calculate the LBP of a given input image.
 
     This function will create an LBP descriptor of a given input image. It
-    is important to make sure the image dimendions are divisible by the
+    is important to make sure the image dimensions are divisible by the
     region_size parameter.
 
     :param image:           Input image
