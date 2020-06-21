@@ -2,7 +2,7 @@
 """CIS 693 - Project 5.
 
 Author: John Oyster
-Date:   June 19, 2020
+Date:   June 26, 2020
 Description:
 
     The objective of this project is to perform 3D indoor scene reconstruction.
