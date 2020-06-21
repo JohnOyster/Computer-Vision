@@ -29,3 +29,7 @@ Project 4
 Image Registration using SIFT
 
 See: https://www.cs.ubc.ca/~lowe/papers/iccv99.pdf
+
+Project 5
+---------
+3D Indoor Scene Reconstruction using Microsoft Kinect Data

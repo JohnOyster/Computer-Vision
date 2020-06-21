@@ -68,7 +68,7 @@ def main():
     :rtype:         int
     """
     number_of_trials = 10
-    mat_data = lbp.process_mat_file(mat_file="/home/john/Workspace/CIS693/Project3/Data/ORL_64x64.mat")
+    mat_data = lbp.process_mat_file(mat_file="/LBP/Data/ORL_64x64.mat")
 
     # Set Classifier parameters
     C = 1.0  # SVM regularization parameter

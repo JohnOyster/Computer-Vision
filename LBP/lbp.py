@@ -249,7 +249,7 @@ def main():
     """
     # Load the data set
     # Expecting 40 people with 10 images each
-    data_set = process_mat_file(mat_file="/home/john/Workspace/CIS693/Project3/Data/ORL_64x64.mat")
+    data_set = process_mat_file(mat_file="/LBP/Data/ORL_64x64.mat")
 
     # Set this to something non-zero to display stuff
     num_of_samples = 0
