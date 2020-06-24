@@ -150,15 +150,39 @@ def main():
     :return:        Errno = 0 if good
     :rtype:         int
     """
+    # DISCLAIMER: Quote copyright Douglas Adams
+    message = """For instance, on the planet Earth, man had always assumed \
+                 that he was more intelligent than dolphins because he had \
+                 achieved so much, the wheel, New York, wars and so on, \
+                 whilst all the dolphins had ever done was muck about in \
+                 the water having a good time. But conversely, the dolphins \
+                 had always believed that they were far more intelligent than \
+                 man, for precisely the same reasons."""
     clean_image = get_image("./Data/Cleveland.jpg")
 
-    steg_image = encode_message(clean_image, "Hello, there fine world!")
+    steg_image = encode_message(clean_image, message)
     # Display results
     display_side_by_side(clean_image, steg_image)
 
-    recovered_msg = decode_message(steg_image)
+    recovered_msg = decode_message(steg_image).replace('       ', ' ')
 
     print(recovered_msg)
+
+    print("[INFO] Original Image mean is {}".format(clean_image.mean()))
+    print("[INFO] Steg Image mean is {}".format(steg_image.mean()))
+    print("[INFO] Original Image std is {}".format(steg_image.std()))
+    print("[INFO] Steg Image std is {}".format(steg_image.std()))
+
+    orig_hist = cv2.calcHist([clean_image],[0] ,None,[256],[0,256])
+    steg_hist = cv2.calcHist([steg_image],[0],None,[256],[0,256])
+
+    plt.plot(orig_hist)
+    plt.show()
+
+    plt.plot(steg_hist)
+    plt.show()
+
+    #display_side_by_side(orig_hist, steg_hist)
 
 
 if __name__ == '__main__':

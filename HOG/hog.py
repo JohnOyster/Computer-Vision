@@ -73,6 +73,7 @@ def compute_gradients(image, is_signed=False):
     - Gradient operators: Gx = [-1 0 1] and Gy = [-1 0 1]T
     - Number of orientation bins = 9
 
+    :param is_signed:
     :param image:
     :return:
     """
