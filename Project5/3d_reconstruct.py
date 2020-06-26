@@ -30,12 +30,12 @@ Description:
        - At the end, merge the two 3D point clouds.
 """
 #  Copyright (c) 2020. John Oyster in agreement with Cleveland State University.
+import copy
 import numpy as np
 import cv2
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import pyplot as plt
-
-
+import open3d as o3d
 
 
 def point_cloud_pinhole(rgb_image, depth_image):
@@ -67,8 +67,7 @@ def point_cloud_pinhole(rgb_image, depth_image):
     cloud_list = []
     for row in range(width):
         for col in range(height):
-            # TODO(John): Need to figure out the Z scaling factor
-            depth_val = np.float16(depth_image[row, col]) / 1000
+            depth_val = np.float32(depth_image[row, col]) / 10000
             if depth_val == 0:
                 continue
             projected_x = depth_val * (row - c_x) / f_x
@@ -94,6 +93,15 @@ def plot_point_cloud(cloud_list):
     plt.show()
 
 
+def draw_registration_result(source, target, transformation):
+    source_temp = copy.deepcopy(source)
+    target_temp = copy.deepcopy(target)
+    source_temp.paint_uniform_color([1, 0.706, 0])
+    target_temp.paint_uniform_color([0, 0.651, 0.929])
+    source_temp.transform(transformation)
+    o3d.visualization.draw_geometries([source_temp, target_temp])
+
+
 def main():
     """Execute this routine if this file is called directly.
 
@@ -116,9 +124,91 @@ def main():
     # -----------------------------------------------------------------
     # Part 1 - Pinhole Camera Model
     pin_cloud = point_cloud_pinhole(image1_rgb, image1_depth)
-    print(pin_cloud)
     plot_point_cloud(pin_cloud)
 
+    # -----------------------------------------------------------------
+    # Part 2
+
+    # Define camera parameters from Part 1
+    camera_parameters = o3d.camera.PinholeCameraIntrinsic()
+    camera_parameters.set_intrinsics(640, 480, 521.0, 521.0, 325.0, 250.0)
+
+    # Acquire RGB and Depth images using Open3D --> To RGBD Format
+    # Scaling factor of 10000 taken from course slides
+    image1_rgb = o3d.io.read_image("./Data/rgb/image1.png")
+    image1_depth = o3d.io.read_image("./Data/depth/image1.png")
+    image2_rgb = o3d.io.read_image("./Data/rgb/image2.png")
+    image2_depth = o3d.io.read_image("./Data/depth/image2.png")
+    image1_rgbd = o3d.geometry.RGBDImage.create_from_color_and_depth(
+        image1_rgb, image1_depth, depth_scale=10000, convert_rgb_to_intensity=False)
+    image2_rgbd = o3d.geometry.RGBDImage.create_from_color_and_depth(
+        image2_rgb, image2_depth, depth_scale=10000, convert_rgb_to_intensity=False)
+
+    # Plot sample source data
+    plt.subplot(1, 2, 1)
+    plt.title('RGB Image')
+    plt.imshow(image1_rgbd.color)
+    plt.subplot(1, 2, 2)
+    plt.title('Depth Image')
+    plt.imshow(image1_rgbd.depth)
+    plt.show()
+
+    # Generate Point clouds from RGBD images
+    image1_pcd = o3d.geometry.PointCloud.create_from_rgbd_image(image1_rgbd, camera_parameters)
+    image2_pcd = o3d.geometry.PointCloud.create_from_rgbd_image(image2_rgbd, camera_parameters)
+
+    # Define initial conditions to perform ICP Point-to-Plane registration
+    threshold = 0.02
+    # Initial transformation matrix from Open3D documentation
+    transformation_initial = np.asarray([[0.862, 0.011, -0.507, 0.5],
+                                         [-0.139, 0.967, -0.215, 0.7],
+                                         [0.487, 0.255, 0.835, -1.4],
+                                         [0.0, 0.0, 0.0, 1.0]])
+
+    # Perform the Initial alignment
+    print("[INFO] Initial Alignment")
+    print(image2_pcd)
+    evaluation = o3d.registration.evaluate_registration(
+        image1_pcd, image2_pcd, threshold, transformation_initial)
+    print(evaluation)
+
+    # Normalize both point clouds using Voxel sampling to get better results
+    # NOTE: This was reccomendation in Open3D documentation
+    image1_pcd.voxel_down_sample(voxel_size=0.05)
+    image2_pcd.voxel_down_sample(voxel_size=0.05)
+
+    # Initialize the vertex information from the point clouds
+    image1_pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=30))
+    image2_pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=30))
+
+    # Perform ICP Point-to-Plane registration and find true Transormation matrix
+    print("[INFO] Apply point-to-plane ICP")
+    registered_images = o3d.registration.registration_icp(
+        image1_pcd, image2_pcd, threshold, transformation_initial,
+        o3d.registration.TransformationEstimationPointToPlane())
+    print(registered_images)
+    print("[INFO] Transformation Matrix:")
+    print(registered_images.transformation)
+    draw_registration_result(image1_pcd, image2_pcd, registered_images.transformation)
+
+    # Merge Point Clouds
+    pcds = [image1_pcd, image2_pcd]
+    print("[INFO] Full registration")
+    max_correspondence_distance_coarse = voxel_size * 15
+    max_correspondence_distance_fine = voxel_size * 1.5
+    with o3d.utility.VerbosityContextManager(o3d.utility.VerbosityLevel.Debug) as cm:
+        pose_graph = full_registration(pcds_down,
+                                       max_correspondence_distance_coarse,
+                                       max_correspondence_distance_fine)
+    # Define Pose Graph
+    pose_graph = o3d.registration.PoseGraph()
+
+
+    pcd_combined = o3d.geometry.PointCloud()
+    pcd_combined = image1_pcd.transform(pose_graph.nodes[0].pose)
+    pcd_combined += image2_pcd.transform(pose_graph.nodes[1].pose)
+    pcd_combined_down = pcd_combined.voxel_down_sample(voxel_size=voxel_size)
+    o3d.visualization.draw_geometries([pcd_combined_down])
 
 
     return 0
