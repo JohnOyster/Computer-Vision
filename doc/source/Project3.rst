@@ -33,17 +33,17 @@ descriptors to create a prediction of which image belongs to which subject.
 
 Local Binary Pattern (LBP) Functions
 ------------------------------------
-.. automodule:: Project3.lbp
+.. automodule:: LBP.lbp
    :members:
 
 Scikit-Learn Classifier Program
 -------------------------------
-.. automodule:: Project3.train_svm
+.. automodule:: LBP.train_svm
    :members:
 
 Classifier Output
 -----------------
-.. program-output:: python3 ../../Project3/train_svm.py
+.. program-output:: python3 ../../LBP/train_svm.py
 
 Conclusion
 ----------

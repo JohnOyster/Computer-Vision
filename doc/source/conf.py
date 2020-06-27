@@ -20,6 +20,8 @@
 import os
 import sys
 sys.path.insert(0, os.path.abspath('../..'))
+sys.path.insert(1, os.path.abspath('../../Project3'))
+sys.path.insert(1, os.path.abspath('../../Project4'))
 sys.path.insert(1, os.path.abspath('../../Project5'))
 
 
@@ -45,7 +47,7 @@ templates_path = ['_templates']
 source_suffix = '.rst'
 
 # The master toctree document.
-master_doc = 'SIFT'
+master_doc = 'Project5'
 
 # General information about the project.
 project = 'CIS 693 -- Computer Vision'

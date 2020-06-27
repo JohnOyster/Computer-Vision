@@ -38,7 +38,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_val_score
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
-import lbp
+import LBP.lbp
 
 
 def generate_lbp_descriptors(data):

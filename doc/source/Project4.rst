@@ -34,12 +34,12 @@ analysis of a series of images.,
 
 Local Binary Pattern (LBP) Functions
 ------------------------------------
-.. automodule:: Project4.sift
+.. automodule:: SIFT.sift
    :members:
 
 Classifier Output
 -----------------
-.. program-output:: python3 ../../Project4/sift.py
+.. program-output:: python3 ../../SIFT/sift.py
 
 Analysis Question
 -----------------

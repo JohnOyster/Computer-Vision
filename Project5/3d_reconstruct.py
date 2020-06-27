@@ -12,6 +12,7 @@ Description:
        is captured using a Kinect camera, see included Data5.
 
        The essential parameters of RGB-D Microsoft Kinect Camera are as following:
+
        - Focal length:
             f_x = 521
             f_y = 521
@@ -22,6 +23,7 @@ Description:
     2. Repeat part 1 using two RGB-D images (image1 rgb with image1 depth and
        image2 rgb with image2 depth) to estimate the camera position assuming
        the camera position of image1 is at the origin (0,0,0).
+
        - To estimate the camera transformation matrix (T), apply Iterative
          Closed Point (ICP) method using point-to-plane error metric (or you
          may use any built-in function).
@@ -102,6 +104,63 @@ def draw_registration_result(source, target, transformation):
     o3d.visualization.draw_geometries([source_temp, target_temp])
 
 
+# =====================================================================
+# Following functions taken from Open3D Documentation
+# =====================================================================
+def pairwise_registration(source, target):
+    voxel_size = 0.05
+    max_correspondence_distance_coarse = voxel_size * 15
+    max_correspondence_distance_fine = voxel_size * 1.5
+    print("Apply point-to-plane ICP")
+    icp_coarse = o3d.registration.registration_icp(
+        source, target, max_correspondence_distance_coarse, np.identity(4),
+        o3d.registration.TransformationEstimationPointToPlane())
+    icp_fine = o3d.registration.registration_icp(
+        source, target, max_correspondence_distance_fine,
+        icp_coarse.transformation,
+        o3d.registration.TransformationEstimationPointToPlane())
+    transformation_icp = icp_fine.transformation
+    information_icp = o3d.registration.get_information_matrix_from_point_clouds(
+        source, target, max_correspondence_distance_fine,
+        icp_fine.transformation)
+    return transformation_icp, information_icp
+
+
+def full_registration(pcds, max_correspondence_distance_coarse,
+                      max_correspondence_distance_fine):
+    pose_graph = o3d.registration.PoseGraph()
+    odometry = np.identity(4)
+    pose_graph.nodes.append(o3d.registration.PoseGraphNode(odometry))
+    n_pcds = len(pcds)
+    for source_id in range(n_pcds):
+        for target_id in range(source_id + 1, n_pcds):
+            transformation_icp, information_icp = pairwise_registration(
+                pcds[source_id], pcds[target_id])
+            print("Build o3d.registration.PoseGraph")
+            if target_id == source_id + 1:  # odometry case
+                odometry = np.dot(transformation_icp, odometry)
+                pose_graph.nodes.append(
+                    o3d.registration.PoseGraphNode(np.linalg.inv(odometry)))
+                pose_graph.edges.append(
+                    o3d.registration.PoseGraphEdge(source_id,
+                                                   target_id,
+                                                   transformation_icp,
+                                                   information_icp,
+                                                   uncertain=False))
+            else:  # loop closure case
+                pose_graph.edges.append(
+                    o3d.registration.PoseGraphEdge(source_id,
+                                                   target_id,
+                                                   transformation_icp,
+                                                   information_icp,
+                                                   uncertain=True))
+    return pose_graph
+
+# =====================================================================
+# Above Functions taken from Open3D Documentation
+# =====================================================================
+
+
 def main():
     """Execute this routine if this file is called directly.
 
@@ -128,6 +187,9 @@ def main():
 
     # -----------------------------------------------------------------
     # Part 2
+
+    # Define parameters
+    voxel_size = 0.02
 
     # Define camera parameters from Part 1
     camera_parameters = o3d.camera.PinholeCameraIntrinsic()
@@ -173,15 +235,15 @@ def main():
     print(evaluation)
 
     # Normalize both point clouds using Voxel sampling to get better results
-    # NOTE: This was reccomendation in Open3D documentation
-    image1_pcd.voxel_down_sample(voxel_size=0.05)
-    image2_pcd.voxel_down_sample(voxel_size=0.05)
+    # NOTE: This was recommendation in Open3D documentation
+    image1_pcd.voxel_down_sample(voxel_size=voxel_size)
+    image2_pcd.voxel_down_sample(voxel_size=voxel_size)
 
     # Initialize the vertex information from the point clouds
     image1_pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=30))
     image2_pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=30))
 
-    # Perform ICP Point-to-Plane registration and find true Transormation matrix
+    # Perform ICP Point-to-Plane registration and find true Transformation matrix
     print("[INFO] Apply point-to-plane ICP")
     registered_images = o3d.registration.registration_icp(
         image1_pcd, image2_pcd, threshold, transformation_initial,
@@ -197,19 +259,15 @@ def main():
     max_correspondence_distance_coarse = voxel_size * 15
     max_correspondence_distance_fine = voxel_size * 1.5
     with o3d.utility.VerbosityContextManager(o3d.utility.VerbosityLevel.Debug) as cm:
-        pose_graph = full_registration(pcds_down,
+        pose_graph = full_registration(pcds,
                                        max_correspondence_distance_coarse,
                                        max_correspondence_distance_fine)
-    # Define Pose Graph
-    pose_graph = o3d.registration.PoseGraph()
-
 
     pcd_combined = o3d.geometry.PointCloud()
     pcd_combined = image1_pcd.transform(pose_graph.nodes[0].pose)
     pcd_combined += image2_pcd.transform(pose_graph.nodes[1].pose)
     pcd_combined_down = pcd_combined.voxel_down_sample(voxel_size=voxel_size)
     o3d.visualization.draw_geometries([pcd_combined_down])
-
 
     return 0
 
